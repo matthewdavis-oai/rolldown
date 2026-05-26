@@ -30,8 +30,8 @@ impl SourcemapBuilder {
     }
   }
 
-  pub fn into_source_map(self) -> oxc_sourcemap::SourceMap {
-    self.source_map_builder.into_sourcemap()
+  pub fn into_source_map(self) -> oxc_sourcemap::OwnedSourceMap {
+    self.source_map_builder.into_owned_sourcemap()
   }
 
   pub fn set_source_and_content(&mut self, id: &str, content: &str) {

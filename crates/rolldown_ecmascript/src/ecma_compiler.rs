@@ -9,7 +9,7 @@ use oxc::{
   parser::{ParseOptions, Parser},
   span::{SPAN, SourceType},
 };
-use oxc_sourcemap::SourceMap;
+use oxc_sourcemap::OwnedSourceMap as SourceMap;
 use rolldown_error::{BuildDiagnostic, BuildResult, EventKind, Severity};
 
 use crate::ecma_ast::{

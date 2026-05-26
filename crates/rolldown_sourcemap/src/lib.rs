@@ -1,25 +1,36 @@
 mod source;
 mod source_joiner;
 
-use std::sync::Arc;
+use std::borrow::Cow;
 
 use oxc_sourcemap::Token;
 
-pub use oxc_sourcemap::{JSONSourceMap, SourceMap, SourceMapBuilder, SourcemapVisualizer};
+// `SourceMap` (re-exported) is the lifetime-free owned wrapper. Code that
+// needs the lifetime-parameterized variant (zero-copy parse) can use
+// `oxc_sourcemap::SourceMap<'a>` directly.
+pub use oxc_sourcemap::{
+  JSONSourceMap, OwnedSourceMap as SourceMap, SourceMapBuilder, SourcemapVisualizer,
+};
 pub use source_joiner::SourceJoiner;
 
 pub use crate::source::{Source, SourceMapSource};
 
-/// Strips the first `lines` destination lines from the sourcemap, decrementing all remaining
-/// destination line numbers accordingly. Used to re-anchor a sourcemap after removing a
-/// prefix (e.g. a shebang line) from the generated code.
+/// Strips the first `lines` destination lines from the sourcemap, decrementing
+/// all remaining destination line numbers accordingly. Used to re-anchor a
+/// sourcemap after removing a prefix (e.g. a shebang line) from the generated
+/// code.
+///
+/// Strings are moved out of the input map and reused — no per-string
+/// allocations.
 pub fn adjust_sourcemap_dst_lines(sourcemap: SourceMap, lines: u32) -> SourceMap {
   if lines == 0 {
     return sourcemap;
   }
 
-  let tokens: Box<[Token]> = sourcemap
-    .get_tokens()
+  let mut parts = sourcemap.into_inner().into_parts();
+  parts.tokens = parts
+    .tokens
+    .iter()
     .filter(|t| t.get_dst_line() >= lines)
     .map(|token| {
       Token::new(
@@ -32,23 +43,16 @@ pub fn adjust_sourcemap_dst_lines(sourcemap: SourceMap, lines: u32) -> SourceMap
       )
     })
     .collect();
-
-  SourceMap::new(
-    sourcemap.get_file().cloned(),
-    sourcemap.get_names().cloned().collect(),
-    sourcemap.get_source_root().map(str::to_owned),
-    sourcemap.get_sources().cloned().collect(),
-    sourcemap.get_source_contents().map(|c| c.map(Arc::clone)).collect(),
-    tokens,
-    None,
-  )
+  // Token chunks describe slices of the original `tokens` array; drop them
+  // so the next encoder rebuilds fresh chunk metadata.
+  parts.token_chunks = None;
+  SourceMap::new(oxc_sourcemap::SourceMap::from_parts(parts))
 }
 
 // <https://github.com/rollup/rollup/blob/master/src/utils/collapseSourcemaps.ts>
 pub fn collapse_sourcemaps(sourcemap_chain: &[&SourceMap]) -> SourceMap {
   debug_assert!(sourcemap_chain.len() > 1);
   if sourcemap_chain.len() == 1 {
-    // If there's only one sourcemap, return it as is.
     return sourcemap_chain[0].clone();
   }
 
@@ -60,7 +64,7 @@ pub fn collapse_sourcemaps(sourcemap_chain: &[&SourceMap]) -> SourceMap {
   let sourcemap_and_lookup_table: Vec<_> = chain_without_last
     .iter()
     .rev()
-    .map(|sourcemap| (*sourcemap, sourcemap.generate_lookup_table()))
+    .map(|sourcemap| (sourcemap.as_source_map(), sourcemap.as_source_map().generate_lookup_table()))
     .collect();
 
   let tokens: Box<[Token]> = last_map
@@ -87,15 +91,18 @@ pub fn collapse_sourcemaps(sourcemap_chain: &[&SourceMap]) -> SourceMap {
     })
     .collect();
 
-  SourceMap::new(
+  // Borrow names/sources/sourcesContent from `first_map` (no allocations),
+  // then `into_owned_sourcemap()` to detach so the result outlives the inputs.
+  let borrowed = oxc_sourcemap::SourceMap::new(
     None,
-    first_map.get_names().cloned().collect(),
+    first_map.get_names().map(Cow::Borrowed).collect(),
     None,
-    first_map.get_sources().cloned().collect(),
-    first_map.get_source_contents().map(|x| x.map(Arc::clone)).collect(),
+    first_map.get_sources().map(Cow::Borrowed).collect(),
+    first_map.get_source_contents().map(|c| c.map(Cow::Borrowed)).collect(),
     tokens,
     None,
-  )
+  );
+  borrowed.into_owned_sourcemap()
 }
 
 #[test]
@@ -180,7 +187,7 @@ fn test_collapse_sourcemaps() {
 /// Test for https://github.com/rollup/rollup/issues/5955
 #[test]
 fn test_collapse_sourcemaps_with_coarse_segments() {
-  use oxc_sourcemap::SourceMap;
+  use oxc_sourcemap::OwnedSourceMap as SourceMap;
 
   fn get_loc(mut pos: usize, code: &str) -> (u32, u32) {
     for (line_idx, line) in code.lines().enumerate() {

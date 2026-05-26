@@ -237,7 +237,13 @@ napi-build = { version = "2.2.2" }
 napi-derive = { version = "3.0.0", default-features = false, features = ["type-def", "tracing"] }
 
 # oxc crates with the same version
-oxc = { version = "0.132.0", features = [
+# Temporarily pinned to https://github.com/oxc-project/oxc PR branch
+# `chore/bump-oxc-sourcemap-to-main` (oxc-project/oxc#22742), which bumps
+# `oxc_sourcemap` to its main branch and migrates `oxc_codegen` to the
+# `SourceMap<'a>` / `OwnedSourceMap` lifetime API. Restore to a
+# `version = "0.x.y"` crates.io pin once that PR lands and oxc cuts a
+# release.
+oxc = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main", features = [
   "ast_visit",
   "transformer",
   "minifier",
@@ -249,14 +255,16 @@ oxc = { version = "0.132.0", features = [
   "regular_expression",
   "cfg",
 ] }
-oxc_allocator = { version = "0.132.0", features = ["pool"] }
-oxc_ecmascript = { version = "0.132.0" }
-oxc_napi = { version = "0.132.0" }
-oxc_str = { version = "0.132.0" }
-oxc_minify_napi = { version = "0.132.0" }
-oxc_parser_napi = { version = "0.132.0" }
-oxc_transform_napi = { version = "0.132.0" }
-oxc_traverse = { version = "0.132.0" }
+oxc_allocator = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main", features = [
+  "pool",
+] }
+oxc_ecmascript = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main" }
+oxc_napi = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main" }
+oxc_str = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main" }
+oxc_minify_napi = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main" }
+oxc_parser_napi = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main" }
+oxc_transform_napi = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main" }
+oxc_traverse = { git = "https://github.com/oxc-project/oxc", branch = "chore/bump-oxc-sourcemap-to-main" }
 
 # oxc crates in their own repos
 # Versions must be relaxed for usage in oxc.
@@ -270,6 +278,15 @@ oxc_resolver = { version = "11.19.1", features = [
 ] } # https://github.com/oxc-project/oxc-resolver
 oxc_resolver_napi = { version = "11.19.1", default-features = false, features = ["yarn_pnp"] }
 oxc_sourcemap = { version = "6" } # https://github.com/oxc-project/oxc-sourcemap
+
+# Pinned to oxc-sourcemap main for the `SourceMap<'a>` / `OwnedSourceMap`
+# lifetime API (zero-copy borrow-parsed sourcemaps + lifetime-free owned
+# wrapper) and the visualizer perf/correctness fix
+# (https://github.com/oxc-project/oxc-sourcemap/pull/344). Drop the
+# [patch.crates-io] block once the next oxc-sourcemap release lands and
+# `oxc` releases a version that builds against it.
+[patch.crates-io]
+oxc_sourcemap = { git = "https://github.com/oxc-project/oxc-sourcemap", rev = "abae0f7792ca5f46306a817807a6eb7e0ebc185a" }
 
 [profile.dev]
 # Minimal debug info to speed up local and CI builds.

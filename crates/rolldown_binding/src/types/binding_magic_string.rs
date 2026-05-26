@@ -1,6 +1,4 @@
 #![expect(clippy::inherent_to_string)]
-use std::sync::Arc;
-
 use napi::bindgen_prelude::{Either, This};
 use napi::{Env, JsString};
 use napi_derive::napi;
@@ -1119,17 +1117,10 @@ impl BindingMagicString<'_> {
       hires,
     });
 
-    // If file option is provided, reconstruct the source map with the file field
+    // If file option is provided, set the file field on the source map.
     let source_map = if let Some(file) = opts.file {
-      let mut m = SourceMap::new(
-        Some(Arc::from(file)),
-        source_map.get_names().map(Arc::clone).collect(),
-        None,
-        source_map.get_sources().map(Arc::clone).collect(),
-        source_map.get_source_contents().map(|x| x.map(Arc::clone)).collect(),
-        source_map.get_tokens().collect::<Vec<_>>().into_boxed_slice(),
-        None,
-      );
+      let mut m = source_map;
+      m.set_file(&file);
       if self.ignore_list {
         m.set_x_google_ignore_list(vec![0]);
       }
@@ -1160,17 +1151,10 @@ impl BindingMagicString<'_> {
       hires,
     });
 
-    // If file option is provided, reconstruct the source map with the file field
+    // If file option is provided, set the file field on the source map.
     let source_map = if let Some(file) = opts.file {
-      let mut m = SourceMap::new(
-        Some(Arc::from(file)),
-        source_map.get_names().map(Arc::clone).collect(),
-        None,
-        source_map.get_sources().map(Arc::clone).collect(),
-        source_map.get_source_contents().map(|x| x.map(Arc::clone)).collect(),
-        source_map.get_tokens().collect::<Vec<_>>().into_boxed_slice(),
-        None,
-      );
+      let mut m = source_map;
+      m.set_file(&file);
       if self.ignore_list {
         m.set_x_google_ignore_list(vec![0]);
       }

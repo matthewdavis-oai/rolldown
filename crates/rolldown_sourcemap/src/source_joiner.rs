@@ -1,4 +1,4 @@
-use oxc_sourcemap::{ConcatSourceMapBuilder, SourceMap};
+use oxc_sourcemap::{ConcatSourceMapBuilder, OwnedSourceMap as SourceMap};
 
 use crate::source::Source;
 
@@ -66,7 +66,10 @@ impl<'source> SourceJoiner<'source> {
         line_offset += source.lines_count() + 1; // +1 for the newline
       }
     }
-    (ret_source, sourcemap_builder.map(ConcatSourceMapBuilder::into_sourcemap))
+    // `ConcatSourceMapBuilder::into_sourcemap` returns `SourceMap<'a>` where
+    // `'a` borrows from the input maps; detach it to a `'static`-owned
+    // `OwnedSourceMap` so the caller doesn't have to thread a lifetime.
+    (ret_source, sourcemap_builder.map(|builder| builder.into_sourcemap().into_owned_sourcemap()))
   }
 
   fn accumulate_sourcemap_data_size(&mut self, hint: &SourceMap) {
