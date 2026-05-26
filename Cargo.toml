@@ -277,16 +277,7 @@ oxc_resolver = { version = "11.19.1", features = [
   "yarn_pnp",
 ] } # https://github.com/oxc-project/oxc-resolver
 oxc_resolver_napi = { version = "11.19.1", default-features = false, features = ["yarn_pnp"] }
-oxc_sourcemap = { version = "6" } # https://github.com/oxc-project/oxc-sourcemap
-
-# Pinned to oxc-sourcemap main for the `SourceMap<'a>` / `OwnedSourceMap`
-# lifetime API (zero-copy borrow-parsed sourcemaps + lifetime-free owned
-# wrapper) and the visualizer perf/correctness fix
-# (https://github.com/oxc-project/oxc-sourcemap/pull/344). Drop the
-# [patch.crates-io] block once the next oxc-sourcemap release lands and
-# `oxc` releases a version that builds against it.
-[patch.crates-io]
-oxc_sourcemap = { git = "https://github.com/oxc-project/oxc-sourcemap", rev = "abae0f7792ca5f46306a817807a6eb7e0ebc185a" }
+oxc_sourcemap = { version = "7" } # https://github.com/oxc-project/oxc-sourcemap
 
 [profile.dev]
 # Minimal debug info to speed up local and CI builds.
