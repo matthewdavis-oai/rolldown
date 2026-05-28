@@ -100,7 +100,7 @@ impl<'ast> HmrAstFinalizer<'_, 'ast> {
             // const import_foo = __rolldown_runtime__.loadExports('./foo.js');
             // console.log(import_foo.default, import_foo.bar);
             // ```
-            let rec_id = self.module.imports[&import_decl.span];
+            let rec_id = self.module.imports[&import_decl.node_id()];
             let rec = &self.module.import_records[rec_id];
             let Some(importee_idx) = rec.resolved_module else { return };
             let importee = &self.modules[importee_idx];
@@ -151,7 +151,7 @@ impl<'ast> HmrAstFinalizer<'_, 'ast> {
           ast::ModuleDeclaration::ExportNamedDeclaration(decl) => {
             if let Some(_source) = &decl.source {
               // export {} from '...'
-              let rec_id = self.module.imports[&decl.span];
+              let rec_id = self.module.imports[&decl.node_id()];
               let rec = &self.module.import_records[rec_id];
               let Some(importee_idx) = rec.resolved_module else { return };
               let importee = &self.modules[importee_idx];
@@ -303,7 +303,7 @@ impl<'ast> HmrAstFinalizer<'_, 'ast> {
             }
           },
           ast::ModuleDeclaration::ExportAllDeclaration(export_all_decl) => {
-            let rec_id = self.module.imports[&export_all_decl.span];
+            let rec_id = self.module.imports[&export_all_decl.node_id()];
             let rec = &self.module.import_records[rec_id];
             let Some(importee_idx) = rec.resolved_module else { return };
             let importee = &self.modules[importee_idx];
@@ -595,7 +595,7 @@ impl<'ast> HmrAstFinalizer<'_, 'ast> {
       return;
     };
 
-    let Some(rec_idx) = self.module.imports.get(&import_expr.span) else {
+    let Some(rec_idx) = self.module.imports.get(&import_expr.node_id()) else {
       return;
     };
 
@@ -836,7 +836,7 @@ impl<'ast> HmrAstFinalizer<'_, 'ast> {
       return;
     }
 
-    let Some(rec_idx) = self.module.imports.get(&call_expr.span) else {
+    let Some(rec_idx) = self.module.imports.get(&call_expr.node_id()) else {
       return;
     };
 
