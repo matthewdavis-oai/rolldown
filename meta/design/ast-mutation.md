@@ -31,7 +31,7 @@ Important constraints:
 - Synthetic/default nodes use `NodeId::DUMMY` unless ids are assigned later. Do not insert cross-pass side-table records for synthetic `DUMMY` nodes.
 - Cloned post-semantic nodes can preserve the original node id unless the clone is reset or semantic information is rebuilt. Treat cloned nodes as identity-sensitive.
 
-Rolldown relies on that last point deliberately. Both the incremental-build cache (`NormalizedScanStageOutput::make_copy`) and HMR finalize a *clone* of the scanned AST, produced by `EcmaAst::clone_with_another_arena` into a fresh allocator. That clone uses oxc's `clone_in_with_semantic_ids` rather than plain `clone_in` (which would reset every id to `NodeId::DUMMY`), so the copied nodes keep their original ids. This is what lets the "same post-semantic AST" guarantee hold even when the finalizer mutates a different allocation than the one scan walked.
+Rolldown relies on that last point deliberately. Both the incremental-build cache (`NormalizedScanStageOutput::make_copy`) and HMR finalize a _clone_ of the scanned AST, produced by `EcmaAst::clone_with_another_arena` into a fresh allocator. That clone uses oxc's `clone_in_with_semantic_ids` rather than plain `clone_in` (which would reset every id to `NodeId::DUMMY`), so the copied nodes keep their original ids. This is what lets the "same post-semantic AST" guarantee hold even when the finalizer mutates a different allocation than the one scan walked.
 
 ## Current NodeId-Keyed Tables
 
@@ -74,7 +74,7 @@ Oxc `Address` is still acceptable for scratch state inside one live AST traversa
 
 - `PreProcessor`'s `statement_stack` / `statement_replace_map` in `crates/rolldown/src/utils/tweak_ast_for_scanning.rs`.
 
-`PreProcessor` specifically *cannot* use `NodeId`: it runs before the final semantic rebuild (`recreate_scoping` in `crates/rolldown/src/utils/pre_process_ecma_ast.rs`), so node ids are not yet assigned to the nodes it creates or moves. `Address` is the only stable per-node identity available at that point, and it is safe because the table never outlives the traversal.
+`PreProcessor` specifically _cannot_ use `NodeId`: it runs before the final semantic rebuild (`recreate_scoping` in `crates/rolldown/src/utils/pre_process_ecma_ast.rs`), so node ids are not yet assigned to the nodes it creates or moves. `Address` is the only stable per-node identity available at that point, and it is safe because the table never outlives the traversal.
 
 Do not store `Address` in module metadata, entry metadata, or link-stage tables that outlive the traversal that produced it. In the post-semantic scanner, prefer `NodeId` even for same-traversal node identity checks when the compared nodes already have semantic IDs.
 
